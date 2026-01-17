@@ -1,0 +1,25 @@
+<h2 class="title">Turnos</h2>
+
+<div class="appointments">
+  <div class="card" *ngFor="let a of appointments" [ngClass]="a.status">
+    
+    <div class="info">
+      <div class="date">{{ a.date }} {{ a.time }}</div>
+      <div class="client">{{ a.client }}</div>
+    </div>
+
+    <div class="status">
+      {{ a.status | uppercase }}
+    </div>
+
+    <div class="actions" *ngIf="isAdmin && a.status === 'pending'">
+      <button class="btn confirm" (click)="updateStatus(a.id, 'confirmed')">
+        Confirmar
+      </button>
+      <button class="btn cancel" (click)="updateStatus(a.id, 'cancelled')">
+        Cancelar
+      </button>
+    </div>
+
+  </div>
+</div>
