@@ -1,7 +1,6 @@
-<nav>
-  <a routerLink="/clients">Clientes</a>
+<nav class="navbar">
+  <a *ngIf="isAdmin()" routerLink="/clients">Clientes</a>
   <a routerLink="/appointments">Turnos</a>
 
-  <span class="role">{{ auth.getRole() }}</span>
   <button (click)="logout()">Salir</button>
 </nav>

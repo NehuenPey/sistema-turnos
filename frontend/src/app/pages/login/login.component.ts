@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
-
 @Component({
   standalone: true,
   selector: 'app-login',
@@ -12,8 +11,17 @@ import { AuthService } from '../../services/auth.service';
   template: `
     <h2>Login</h2>
 
-    <input type="email" [(ngModel)]="email" placeholder="Email">
-    <input type="password" [(ngModel)]="password" placeholder="Password">
+    <input
+      type="email"
+      [(ngModel)]="email"
+      placeholder="Email"
+    />
+
+    <input
+      type="password"
+      [(ngModel)]="password"
+      placeholder="Password"
+    />
 
     <button (click)="login()">Ingresar</button>
 
@@ -21,6 +29,7 @@ import { AuthService } from '../../services/auth.service';
   `
 })
 export class LoginComponent {
+
   email = '';
   password = '';
   error = '';
@@ -30,30 +39,38 @@ export class LoginComponent {
     private router: Router
   ) {}
 
- login() {
-  if (!this.email || !this.password) {
-    this.error = 'Email y contraseña son obligatorios';
-    return;
-  }
+  login() {
 
-  this.authService.login(this.email, this.password)
-    .subscribe({
-      next: (res: any) => {
-        if (!res || !res.token) {
-          this.error = 'Respuesta inválida del servidor';
-          return;
+    if (!this.email || !this.password) {
+      this.error = 'Email y contraseña son obligatorios';
+      return;
+    }
+
+    this.authService.login(this.email, this.password)
+      .subscribe({
+        next: (res: any) => {
+
+          if (!res || !res.token) {
+            this.error = 'Respuesta inválida del servidor';
+            return;
+          }
+
+          // Guardar token
+          this.authService.saveToken(res.token);
+
+          // Redirigir según rol
+          const role = this.authService.getUserRole();
+
+          if (role === 'admin') {
+            this.router.navigate(['/clients']);
+          } else {
+            this.router.navigate(['/appointments']);
+          }
+        },
+        error: (err) => {
+          console.error('LOGIN ERROR:', err);
+          this.error = 'Login incorrecto';
         }
-
-        this.authService.saveToken(res.token);
-        this.router.navigate(['/clients']);
-      },
-      error: (err) => {
-        console.error('LOGIN ERROR:', err);
-        this.error = 'Login incorrecto';
-      }
-    });
-}
-
-
-
+      });
+  }
 }

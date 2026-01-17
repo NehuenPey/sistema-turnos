@@ -9,7 +9,7 @@ import { AuthService } from '../../services/auth.service';
   imports: [CommonModule, RouterLink],
   template: `
     <nav class="nav">
-      <a routerLink="/clients">Clientes</a>
+      <a *ngIf="isAdmin()" routerLink="/clients">Clientes</a>
       <a routerLink="/appointments">Turnos</a>
       <button (click)="logout()">Salir</button>
     </nav>
@@ -46,9 +46,12 @@ export class NavbarComponent {
     private router: Router
   ) {}
 
+  isAdmin(): boolean {
+    return this.authService.getUserRole() === 'admin';
+  }
+
   logout() {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
-  
 }

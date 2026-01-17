@@ -6,13 +6,47 @@ require_once "../middleware/auth.php";
 $method = $_SERVER["REQUEST_METHOD"];
 
 switch ($method) {
+
+    /* =========================
+       GET – LISTAR CLIENTES
+       ========================= */
     case "GET":
-        $stmt = $pdo->query("SELECT * FROM clients");
+
+        // 🔒 SOLO ADMIN
+        if ($user["role"] !== "admin") {
+            http_response_code(403);
+            echo json_encode(["error" => "Forbidden"]);
+            exit;
+        }
+
+        $stmt = $pdo->query(
+            "SELECT id, name, phone, email
+             FROM clients
+             ORDER BY name ASC"
+        );
+
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         break;
 
+    /* =========================
+       POST – CREAR CLIENTE
+       ========================= */
     case "POST":
+
+        // 🔒 SOLO ADMIN
+        if ($user["role"] !== "admin") {
+            http_response_code(403);
+            echo json_encode(["error" => "Forbidden"]);
+            exit;
+        }
+
         $data = json_decode(file_get_contents("php://input"), true);
+
+        if (!isset($data["name"], $data["phone"], $data["email"])) {
+            http_response_code(400);
+            echo json_encode(["error" => "Invalid data"]);
+            exit;
+        }
 
         $stmt = $pdo->prepare(
             "INSERT INTO clients (name, phone, email)
@@ -20,7 +54,7 @@ switch ($method) {
         );
 
         $stmt->execute([
-            "name" => $data["name"],
+            "name"  => $data["name"],
             "phone" => $data["phone"],
             "email" => $data["email"]
         ]);

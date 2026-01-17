@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
 
@@ -30,6 +31,14 @@ export const routes: Routes = [
         .then(m => m.MyAppointmentsComponent),
     canActivate: [AuthGuard]
   },
+  {
+  path: 'clients',
+  loadComponent: () =>
+    import('./pages/clients/clients.component')
+      .then(m => m.ClientsComponent),
+  canActivate: [AuthGuard, adminGuard]
+},
+
 
 
   { path: '**', redirectTo: 'login' }
