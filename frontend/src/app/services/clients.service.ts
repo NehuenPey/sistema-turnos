@@ -6,11 +6,11 @@ import { HttpClient } from '@angular/common/http';
 })
 export class ClientsService {
 
-  private apiUrl = 'http://localhost/Sistema/backend/clients';
+  private apiUrl = 'http://localhost/Sistema/backend/clients/';
 
   constructor(private http: HttpClient) {}
 
   getClients() {
-    return this.http.get<any[]>(`${this.apiUrl}/index.php`);
+    return this.http.get<any[]>(this.apiUrl);
   }
 }

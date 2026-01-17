@@ -1,0 +1,15 @@
+<h2>Mis turnos</h2>
+
+<div class="appointments">
+  <div
+    class="card"
+    *ngFor="let a of appointments"
+    [ngClass]="a.status"
+  >
+    <div class="info">
+      <div class="date">{{ a.date }} {{ a.time }}</div>
+    </div>
+
+    <div class="status">{{ a.status }}</div>
+  </div>
+</div>

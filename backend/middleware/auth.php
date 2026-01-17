@@ -1,21 +1,21 @@
 <?php
 require_once "../config/jwt_utils.php";
 
-$authHeader = null;
-
-// Header personalizado
-if (isset($_SERVER['HTTP_X_AUTHORIZATION'])) {
-    $authHeader = $_SERVER['HTTP_X_AUTHORIZATION'];
+// Preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
 }
 
-if (!$authHeader) {
+// Leer X-Authorization
+if (!isset($_SERVER['HTTP_X_AUTHORIZATION'])) {
     http_response_code(401);
     echo json_encode(["error" => "Token missing"]);
     exit;
 }
 
-$token = str_replace("Bearer ", "", $authHeader);
-$user = verify_jwt($token);
+$token = $_SERVER['HTTP_X_AUTHORIZATION'];
+$user  = verify_jwt($token);
 
 if (!$user) {
     http_response_code(401);
@@ -23,7 +23,8 @@ if (!$user) {
     exit;
 }
 
-$_REQUEST['user'] = [
-    'id' => $user['user_id'],
+// Usuario disponible
+$user = [
+    'id'   => $user['user_id'],
     'role' => $user['role']
 ];

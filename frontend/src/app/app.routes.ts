@@ -9,7 +9,6 @@ export const routes: Routes = [
       import('./pages/login/login.component')
         .then(m => m.LoginComponent)
   },
-
   {
     path: 'clients',
     loadComponent: () =>
@@ -17,14 +16,21 @@ export const routes: Routes = [
         .then(m => m.ClientsComponent),
     canActivate: [AuthGuard]
   },
-
   {
     path: 'appointments',
     loadComponent: () =>
       import('./pages/appointments/appointments.component')
         .then(m => m.AppointmentsComponent),
     canActivate: [AuthGuard]
+  }
+  ,{
+    path: 'my-appointments',
+    loadComponent: () =>
+      import('./pages/my-appointments/my-appointments.component')
+        .then(m => m.MyAppointmentsComponent),
+    canActivate: [AuthGuard]
   },
+
 
   { path: '**', redirectTo: 'login' }
 ];

@@ -7,7 +7,7 @@ import { AuthService } from './auth.service';
 })
 export class AppointmentsService {
 
-  private apiUrl = 'http://localhost/Sistema/backend/appointments/';
+  private apiUrl = 'http://localhost/Sistema/backend/appointments/index.php';
 
   constructor(
     private http: HttpClient,
@@ -15,16 +15,26 @@ export class AppointmentsService {
   ) {}
 
   private getHeaders() {
-    return {
-      headers: new HttpHeaders({
-        'Content-Type': 'application/json',
-        'X-Authorization': this.auth.getToken() || ''
-      })
-    };
-  }
+  return {
+    headers: new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${this.auth.getToken()}`
+    })
+  };
+}
 
   getAppointments() {
-    return this.http.get<any[]>(this.apiUrl, this.getHeaders());
+    return this.http.get<any[]>(
+      `${this.apiUrl}/appointments`,
+      this.getHeaders()
+    );
+  }
+
+  getMyAppointments() {
+    return this.http.get<any[]>(
+      `${this.apiUrl}/appointments/my.php`,
+      this.getHeaders()
+    );
   }
 
   createAppointment(data: {
@@ -33,7 +43,7 @@ export class AppointmentsService {
     time: string;
   }) {
     return this.http.post(
-      this.apiUrl,
+      `${this.apiUrl}/appointments`,
       data,
       this.getHeaders()
     );
@@ -41,7 +51,7 @@ export class AppointmentsService {
 
   updateStatus(id: number, status: string) {
     return this.http.put(
-      `${this.apiUrl}?id=${id}`,
+      `${this.apiUrl}/appointments?id=${id}`,
       { status },
       this.getHeaders()
     );
