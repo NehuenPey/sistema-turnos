@@ -1,0 +1,14 @@
+# Node / Angular
+node_modules/
+dist/
+.angular/
+
+# PHP / env
+.env
+
+# OS / editor
+.vscode/
+.DS_Store
+
+# Logs
+*.log

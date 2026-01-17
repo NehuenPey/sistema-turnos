@@ -1,0 +1,9 @@
+POST http://localhost/Sistema/backend/appointments/index.php
+Content-Type: application/json
+X-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo3LCJyb2xlIjoidXNlciIsImV4cCI6MTc2ODQ3NjQ4M30.Y0vhiYphqk-L1Cf4ViQARbMTX6C_672KlMvbQNwu_HQ
+
+{
+  "client_id": 1,
+  "date": "2026-01-25",
+  "time": "11:00:00"
+}
