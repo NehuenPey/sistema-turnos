@@ -52,7 +52,7 @@ export class AppointmentsComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.isAdmin = this.auth.getRole() === 'admin';
+    this.isAdmin = this.auth.getUserRole() === 'admin';
     this.load();
   }
 

@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
-import { adminGuard } from './guards/admin.guard';
+import { AdminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
 
@@ -10,21 +10,24 @@ export const routes: Routes = [
       import('./pages/login/login.component')
         .then(m => m.LoginComponent)
   },
+
   {
     path: 'clients',
     loadComponent: () =>
       import('./pages/clients/clients.component')
         .then(m => m.ClientsComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AuthGuard, AdminGuard] // 🔒 SOLO ADMIN
   },
+
   {
     path: 'appointments',
     loadComponent: () =>
       import('./pages/appointments/appointments.component')
         .then(m => m.AppointmentsComponent),
     canActivate: [AuthGuard]
-  }
-  ,{
+  },
+
+  {
     path: 'my-appointments',
     loadComponent: () =>
       import('./pages/my-appointments/my-appointments.component')
@@ -32,14 +35,12 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
-  path: 'clients',
+  path: 'register',
   loadComponent: () =>
-    import('./pages/clients/clients.component')
-      .then(m => m.ClientsComponent),
-  canActivate: [AuthGuard, adminGuard]
-},
-
-
+    import('./pages/register/register.component')
+      .then(m => m.RegisterComponent)
+}
+,
 
   { path: '**', redirectTo: 'login' }
 ];

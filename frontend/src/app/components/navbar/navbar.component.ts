@@ -8,9 +8,14 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-navbar',
   imports: [CommonModule, RouterLink],
   template: `
-    <nav class="nav">
-      <a *ngIf="isAdmin()" routerLink="/clients">Clientes</a>
-      <a routerLink="/appointments">Turnos</a>
+    <nav class="nav" *ngIf="isLoggedIn">
+
+      <a *ngIf="isAdmin" routerLink="/clients">Clientes</a>
+
+      <a routerLink="/appointments">
+        {{ isAdmin ? 'Turnos' : 'Mis turnos' }}
+      </a>
+
       <button (click)="logout()">Salir</button>
     </nav>
   `,
@@ -41,17 +46,19 @@ import { AuthService } from '../../services/auth.service';
 })
 export class NavbarComponent {
 
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
+  isAdmin = false;
+  isLoggedIn = false;
 
-  isAdmin(): boolean {
-    return this.authService.getUserRole() === 'admin';
+  constructor(
+    private auth: AuthService,
+    private router: Router
+  ) {
+    this.isLoggedIn = this.auth.isLoggedIn();
+    this.isAdmin = this.auth.isAdmin();
   }
 
   logout() {
-    this.authService.logout();
+    this.auth.logout();
     this.router.navigate(['/login']);
   }
 }
