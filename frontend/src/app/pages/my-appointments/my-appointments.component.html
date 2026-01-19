@@ -1,15 +1,17 @@
 <h2>Mis turnos</h2>
 
 <div class="appointments">
-  <div
-    class="card"
-    *ngFor="let a of appointments"
-    [ngClass]="a.status"
-  >
+  <div class="card" *ngFor="let a of appointments" [ngClass]="a.status">
     <div class="info">
       <div class="date">{{ a.date }} {{ a.time }}</div>
     </div>
 
     <div class="status">{{ a.status }}</div>
   </div>
+  <span *ngIf="!isAdmin && a.status === 'pending'">
+    <button (click)="updateStatus(a.id, 'cancelled')">
+      Cancelar
+    </button>
+  </span>
+
 </div>

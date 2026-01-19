@@ -1,7 +1,7 @@
 <?php
 require_once "../config/cors.php";
-require_once "../config/database.php";
 require_once "../middleware/auth.php";
+require_once "../config/database.php";
 
 $method = $_SERVER["REQUEST_METHOD"];
 
@@ -12,7 +12,7 @@ switch ($method) {
        ========================= */
     case "GET":
 
-        // 🔒 SOLO ADMIN
+        // SOLO ADMIN
         if ($user["role"] !== "admin") {
             http_response_code(403);
             echo json_encode(["error" => "Forbidden"]);
@@ -33,7 +33,7 @@ switch ($method) {
        ========================= */
     case "POST":
 
-        // 🔒 SOLO ADMIN
+        // SOLO ADMIN
         if ($user["role"] !== "admin") {
             http_response_code(403);
             echo json_encode(["error" => "Forbidden"]);

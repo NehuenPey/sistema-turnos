@@ -15,7 +15,6 @@ try {
     $password = password_hash($data["password"], PASSWORD_BCRYPT);
     $role = 'user';
 
-    // 👉 nombre por defecto (podés cambiarlo después)
     $name = explode('@', $email)[0];
 
     // Verificar si existe

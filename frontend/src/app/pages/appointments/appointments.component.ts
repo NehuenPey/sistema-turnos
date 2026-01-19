@@ -30,8 +30,16 @@ import { AuthService } from '../../services/auth.service';
 
         <!-- SOLO ADMIN -->
         <span *ngIf="isAdmin">
-          <button (click)="updateStatus(a.id, 'confirmed')">Confirmar</button>
-          <button (click)="updateStatus(a.id, 'cancelled')">Cancelar</button>
+          <button 
+            *ngIf="a.status === 'pending'"
+            (click)="updateStatus(a.id, 'confirmed')">
+            Confirmar
+          </button>
+          <button 
+            *ngIf="a.status === 'pending'"
+            (click)="updateStatus(a.id, 'cancelled')">
+            Cancelar
+          </button>
         </span>
       </li>
     </ul>
@@ -49,7 +57,7 @@ export class AppointmentsComponent implements OnInit {
   constructor(
     private service: AppointmentsService,
     private auth: AuthService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.isAdmin = this.auth.getUserRole() === 'admin';
@@ -73,4 +81,5 @@ export class AppointmentsComponent implements OnInit {
     this.service.updateStatus(id, status)
       .subscribe(() => this.load());
   }
+
 }

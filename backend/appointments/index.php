@@ -9,7 +9,7 @@ switch ($method) {
 
     case "GET":
 
-        // 👤 USER: solo sus turnos
+        // USER: solo sus turnos
         if ($user["role"] === "user") {
 
             $stmt = $pdo->prepare(
@@ -22,9 +22,8 @@ switch ($method) {
             $stmt->execute([
                 "user_id" => $user["id"]
             ]);
-
         } else {
-            // 🛠 ADMIN: todos los turnos
+            // ADMIN: todos los turnos
             $stmt = $pdo->query(
                 "SELECT a.id, c.name AS client, a.date, a.time, a.status
                  FROM appointments a
@@ -45,7 +44,7 @@ switch ($method) {
             exit;
         }
 
-        // ❌ Turnos en el pasado
+        // Turnos en el pasado
         $now = new DateTime();
         $appointmentDateTime = new DateTime($data["date"] . ' ' . $data["time"]);
 
@@ -55,7 +54,7 @@ switch ($method) {
             exit;
         }
 
-        // ❌ Horario ocupado
+        // Horario ocupado
         $check = $pdo->prepare(
             "SELECT COUNT(*) FROM appointments
              WHERE date = :date
@@ -73,7 +72,7 @@ switch ($method) {
             exit;
         }
 
-        // ✅ Crear turno
+        // Crear turno
         $stmt = $pdo->prepare(
             "INSERT INTO appointments (client_id, user_id, date, time, status)
              VALUES (:client_id, :user_id, :date, :time, 'pending')"
@@ -91,13 +90,6 @@ switch ($method) {
 
     case "PUT":
 
-        // 🔒 SOLO ADMIN
-        if ($user["role"] !== "admin") {
-            http_response_code(403);
-            echo json_encode(["error" => "Forbidden"]);
-            exit;
-        }
-
         parse_str($_SERVER["QUERY_STRING"], $params);
         $id = $params["id"] ?? null;
         $data = json_decode(file_get_contents("php://input"), true);
@@ -108,34 +100,58 @@ switch ($method) {
             exit;
         }
 
-        $current = $pdo->prepare(
-            "SELECT status FROM appointments WHERE id = :id"
+        // Buscar turno
+        $stmt = $pdo->prepare(
+            "SELECT status, user_id FROM appointments WHERE id = :id"
         );
-        $current->execute(["id" => $id]);
-        $currentStatus = $current->fetchColumn();
+        $stmt->execute(["id" => $id]);
+        $appointment = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$currentStatus) {
+        if (!$appointment) {
             http_response_code(404);
             echo json_encode(["error" => "Appointment not found"]);
             exit;
         }
 
-        if ($currentStatus === 'cancelled') {
-            http_response_code(400);
-            echo json_encode(["error" => "Cancelled appointments cannot be modified"]);
-            exit;
+        // USER
+        if ($user["role"] === "user") {
+
+            // Solo sus turnos
+            if ($appointment["user_id"] != $user["id"]) {
+                http_response_code(403);
+                echo json_encode(["error" => "Forbidden"]);
+                exit;
+            }
+
+            // Solo cancelar pending
+            if ($appointment["status"] !== "pending" || $data["status"] !== "cancelled") {
+                http_response_code(400);
+                echo json_encode(["error" => "You can only cancel pending appointments"]);
+                exit;
+            }
         }
 
-        if ($currentStatus === 'confirmed' && $data["status"] === 'cancelled') {
-            http_response_code(400);
-            echo json_encode(["error" => "Confirmed appointments cannot be cancelled"]);
-            exit;
+        // ADMIN (mantiene reglas)
+        if ($user["role"] === "admin") {
+
+            if ($appointment["status"] === "cancelled") {
+                http_response_code(400);
+                echo json_encode(["error" => "Already cancelled"]);
+                exit;
+            }
+
+            if ($appointment["status"] === "confirmed" && $data["status"] === "cancelled") {
+                http_response_code(400);
+                echo json_encode(["error" => "Confirmed appointments cannot be cancelled"]);
+                exit;
+            }
         }
 
-        $stmt = $pdo->prepare(
+        // Actualizar estado
+        $update = $pdo->prepare(
             "UPDATE appointments SET status = :status WHERE id = :id"
         );
-        $stmt->execute([
+        $update->execute([
             "status" => $data["status"],
             "id" => $id
         ]);
@@ -145,7 +161,7 @@ switch ($method) {
 
     case "DELETE":
 
-        // 🔒 SOLO ADMIN
+        // SOLO ADMIN
         if ($user["role"] !== "admin") {
             http_response_code(403);
             echo json_encode(["error" => "Forbidden"]);

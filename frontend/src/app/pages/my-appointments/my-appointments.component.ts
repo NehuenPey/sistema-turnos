@@ -27,9 +27,11 @@ export class MyAppointmentsComponent implements OnInit {
   constructor(private service: AppointmentsService) {}
 
   ngOnInit(): void {
-    this.service.getMyAppointments()
-      .subscribe((data: any[]) => {
-        this.appointments = data;
-      });
-  }
+  this.service.getAppointments()
+    .subscribe((data: any[]) => {
+      this.appointments = data;
+    });
+}
+
+  
 }

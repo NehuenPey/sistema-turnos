@@ -8,13 +8,18 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-navbar',
   imports: [CommonModule, RouterLink],
   template: `
-    <nav class="nav" *ngIf="isLoggedIn">
+    <nav class="nav" *ngIf="role">
 
-      <a *ngIf="isAdmin" routerLink="/clients">Clientes</a>
+      <!-- ADMIN -->
+      <ng-container *ngIf="role === 'admin'">
+        <a routerLink="/clients">Clientes</a>
+        <a routerLink="/appointments">Turnos</a>
+      </ng-container>
 
-      <a routerLink="/appointments">
-        {{ isAdmin ? 'Turnos' : 'Mis turnos' }}
-      </a>
+      <!-- USER -->
+      <ng-container *ngIf="role === 'user'">
+        <a routerLink="/my-appointments">Mis turnos</a>
+      </ng-container>
 
       <button (click)="logout()">Salir</button>
     </nav>
@@ -28,12 +33,10 @@ import { AuthService } from '../../services/auth.service';
       color: white;
       align-items: center;
     }
-
     a {
       color: white;
       text-decoration: none;
     }
-
     button {
       margin-left: auto;
       background: #c62828;
@@ -46,15 +49,13 @@ import { AuthService } from '../../services/auth.service';
 })
 export class NavbarComponent {
 
-  isAdmin = false;
-  isLoggedIn = false;
+  role: string | null = null;
 
   constructor(
     private auth: AuthService,
     private router: Router
   ) {
-    this.isLoggedIn = this.auth.isLoggedIn();
-    this.isAdmin = this.auth.isAdmin();
+    this.role = this.auth.getUserRole();
   }
 
   logout() {
