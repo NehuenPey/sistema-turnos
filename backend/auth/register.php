@@ -13,7 +13,7 @@ try {
 
     $email = trim($data["email"]);
     $password = password_hash($data["password"], PASSWORD_BCRYPT);
-    $role = 'user';
+    $role = 'patient';
 
     $name = explode('@', $email)[0];
 

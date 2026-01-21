@@ -7,10 +7,12 @@ $method = $_SERVER["REQUEST_METHOD"];
 
 switch ($method) {
 
+    /* =========================
+       GET
+    ==========================*/
     case "GET":
 
-        // USER: solo sus turnos
-        if ($user["role"] === "user") {
+        if ($user["role"] === "patient") {
 
             $stmt = $pdo->prepare(
                 "SELECT a.id, c.name AS client, a.date, a.time, a.status
@@ -22,8 +24,9 @@ switch ($method) {
             $stmt->execute([
                 "user_id" => $user["id"]
             ]);
+
         } else {
-            // ADMIN: todos los turnos
+            // secretary / admin / doctor
             $stmt = $pdo->query(
                 "SELECT a.id, c.name AS client, a.date, a.time, a.status
                  FROM appointments a
@@ -34,60 +37,43 @@ switch ($method) {
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         break;
 
+
+    /* =========================
+       POST → paciente solicita
+    ==========================*/
     case "POST":
+
+        if ($user["role"] !== "patient") {
+            http_response_code(403);
+            echo json_encode(["error" => "Only patients can request appointments"]);
+            exit;
+        }
 
         $data = json_decode(file_get_contents("php://input"), true);
 
-        if (!isset($data["client_id"], $data["date"], $data["time"])) {
+        if (!isset($data["client_id"])) {
             http_response_code(400);
-            echo json_encode(["error" => "Invalid data"]);
+            echo json_encode(["error" => "Client required"]);
             exit;
         }
 
-        // Turnos en el pasado
-        $now = new DateTime();
-        $appointmentDateTime = new DateTime($data["date"] . ' ' . $data["time"]);
-
-        if ($appointmentDateTime < $now) {
-            http_response_code(400);
-            echo json_encode(["error" => "Cannot create appointments in the past"]);
-            exit;
-        }
-
-        // Horario ocupado
-        $check = $pdo->prepare(
-            "SELECT COUNT(*) FROM appointments
-             WHERE date = :date
-             AND time = :time
-             AND status IN ('pending', 'confirmed')"
-        );
-        $check->execute([
-            "date" => $data["date"],
-            "time" => $data["time"]
-        ]);
-
-        if ($check->fetchColumn() > 0) {
-            http_response_code(409);
-            echo json_encode(["error" => "Time slot already taken"]);
-            exit;
-        }
-
-        // Crear turno
         $stmt = $pdo->prepare(
-            "INSERT INTO appointments (client_id, user_id, date, time, status)
-             VALUES (:client_id, :user_id, :date, :time, 'pending')"
+            "INSERT INTO appointments (client_id, user_id, status)
+             VALUES (:client_id, :user_id, 'requested')"
         );
 
         $stmt->execute([
             "client_id" => $data["client_id"],
-            "user_id"   => $user["id"],
-            "date"      => $data["date"],
-            "time"      => $data["time"]
+            "user_id"   => $user["id"]
         ]);
 
-        echo json_encode(["message" => "Appointment created"]);
+        echo json_encode(["message" => "Appointment requested"]);
         break;
 
+
+    /* =========================
+       PUT → asignar / cancelar
+    ==========================*/
     case "PUT":
 
         parse_str($_SERVER["QUERY_STRING"], $params);
@@ -102,7 +88,9 @@ switch ($method) {
 
         // Buscar turno
         $stmt = $pdo->prepare(
-            "SELECT status, user_id FROM appointments WHERE id = :id"
+            "SELECT status, user_id, date, time
+             FROM appointments
+             WHERE id = :id"
         );
         $stmt->execute(["id" => $id]);
         $appointment = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -113,55 +101,105 @@ switch ($method) {
             exit;
         }
 
-        // USER
-        if ($user["role"] === "user") {
+        /* ===== PATIENTE: cancelar ===== */
+        if ($user["role"] === "patient") {
 
-            // Solo sus turnos
             if ($appointment["user_id"] != $user["id"]) {
                 http_response_code(403);
                 echo json_encode(["error" => "Forbidden"]);
                 exit;
             }
 
-            // Solo cancelar pending
-            if ($appointment["status"] !== "pending" || $data["status"] !== "cancelled") {
+            if ($data["status"] !== "cancelled") {
                 http_response_code(400);
-                echo json_encode(["error" => "You can only cancel pending appointments"]);
+                echo json_encode(["error" => "Only cancellation allowed"]);
                 exit;
             }
+
+            // Regla 24 hs si ya está asignado
+            if ($appointment["status"] === "assigned" && $appointment["date"] && $appointment["time"]) {
+
+                $turno = new DateTime($appointment["date"] . ' ' . $appointment["time"]);
+                $now = new DateTime();
+
+                if (($turno->getTimestamp() - $now->getTimestamp()) < 86400) {
+                    http_response_code(400);
+                    echo json_encode(["error" => "Cannot cancel within 24 hours"]);
+                    exit;
+                }
+            }
+
+            $stmt = $pdo->prepare(
+                "UPDATE appointments SET status = 'cancelled' WHERE id = :id"
+            );
+            $stmt->execute(["id" => $id]);
+
+            echo json_encode(["message" => "Appointment cancelled"]);
+            break;
         }
 
-        // ADMIN (mantiene reglas)
-        if ($user["role"] === "admin") {
+        /* ===== SECRETARY / ADMIN: asignar ===== */
+        if (in_array($user["role"], ["secretary", "admin"])) {
 
-            if ($appointment["status"] === "cancelled") {
+            if ($data["status"] !== "assigned") {
                 http_response_code(400);
-                echo json_encode(["error" => "Already cancelled"]);
+                echo json_encode(["error" => "Invalid status"]);
                 exit;
             }
 
-            if ($appointment["status"] === "confirmed" && $data["status"] === "cancelled") {
+            if (!isset($data["date"], $data["time"])) {
                 http_response_code(400);
-                echo json_encode(["error" => "Confirmed appointments cannot be cancelled"]);
+                echo json_encode(["error" => "Date and time required"]);
                 exit;
             }
+
+            // Verificar horario ocupado
+            $check = $pdo->prepare(
+                "SELECT COUNT(*) FROM appointments
+                 WHERE date = :date
+                 AND time = :time
+                 AND status = 'assigned'
+                 AND id != :id"
+            );
+
+            $check->execute([
+                "date" => $data["date"],
+                "time" => $data["time"],
+                "id"   => $id
+            ]);
+
+            if ($check->fetchColumn() > 0) {
+                http_response_code(409);
+                echo json_encode(["error" => "Time slot already taken"]);
+                exit;
+            }
+
+            $stmt = $pdo->prepare(
+                "UPDATE appointments
+                 SET date = :date, time = :time, status = 'assigned'
+                 WHERE id = :id"
+            );
+
+            $stmt->execute([
+                "date" => $data["date"],
+                "time" => $data["time"],
+                "id"   => $id
+            ]);
+
+            echo json_encode(["message" => "Appointment assigned"]);
+            break;
         }
 
-        // Actualizar estado
-        $update = $pdo->prepare(
-            "UPDATE appointments SET status = :status WHERE id = :id"
-        );
-        $update->execute([
-            "status" => $data["status"],
-            "id" => $id
-        ]);
-
-        echo json_encode(["message" => "Appointment updated"]);
+        http_response_code(403);
+        echo json_encode(["error" => "Forbidden"]);
         break;
 
+
+    /* =========================
+       DELETE → solo admin
+    ==========================*/
     case "DELETE":
 
-        // SOLO ADMIN
         if ($user["role"] !== "admin") {
             http_response_code(403);
             echo json_encode(["error" => "Forbidden"]);

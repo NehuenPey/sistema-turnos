@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AppointmentsService } from '../../services/appointments.service';
 import { AuthService } from '../../services/auth.service';
+import { catchError } from 'rxjs/operators';  // Add this import
+import { throwError } from 'rxjs';  // Add this import
 
 @Component({
   standalone: true,
@@ -12,6 +14,9 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./appointments.component.scss'],
   template: `
     <h2>Turnos</h2>
+
+    <!-- Optional: Display error messages to the user -->
+    <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
 
     <form (ngSubmit)="create()">
       <input type="number" [(ngModel)]="client_id" name="client_id" placeholder="Client ID" required>
@@ -49,6 +54,7 @@ export class AppointmentsComponent implements OnInit {
 
   appointments: any[] = [];
   isAdmin = false;
+  errorMessage = '';  // New: For displaying errors to the user
 
   client_id!: number;
   date = '';
@@ -66,7 +72,17 @@ export class AppointmentsComponent implements OnInit {
 
   load() {
     this.service.getAppointments()
-      .subscribe(data => this.appointments = data);
+      .pipe(
+        catchError(error => {
+          console.error('Error loading appointments:', error);
+          this.errorMessage = 'Error al cargar turnos. Revisa la consola para detalles.';
+          return throwError(error);  // Re-throw to prevent further processing
+        })
+      )
+      .subscribe(data => {
+        this.appointments = data;
+        this.errorMessage = '';  // Clear error on success
+      });
   }
 
   create() {
@@ -74,12 +90,36 @@ export class AppointmentsComponent implements OnInit {
       client_id: this.client_id,
       date: this.date,
       time: this.time
-    }).subscribe(() => this.load());
+    })
+      .pipe(
+        catchError(error => {
+          console.error('Error creating appointment:', error);
+          this.errorMessage = 'Error al crear turno. Revisa la consola para detalles.';
+          return throwError(error);
+        })
+      )
+      .subscribe(() => {
+        this.load();  // Reload only on success
+        this.errorMessage = '';
+        // Optional: Reset form
+        this.client_id = 0;
+        this.date = '';
+        this.time = '';
+      });
   }
 
   updateStatus(id: number, status: string) {
     this.service.updateStatus(id, status)
-      .subscribe(() => this.load());
+      .pipe(
+        catchError(error => {
+          console.error('Error updating status:', error);
+          this.errorMessage = 'Error al actualizar estado. Revisa la consola para detalles.';
+          return throwError(error);
+        })
+      )
+      .subscribe(() => {
+        this.load();  // Reload only on success
+        this.errorMessage = '';
+      });
   }
-
 }

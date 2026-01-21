@@ -25,6 +25,6 @@ if (!$user) {
 
 // Usuario disponible
 $user = [
-    'id'   => $user['user_id'],
-    'role' => $user['role']
+  'id' => $payload['id'],
+  'role' => $payload['role']
 ];
