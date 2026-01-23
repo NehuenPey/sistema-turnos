@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Leer X-Authorization
+// Header correcto
 if (!isset($_SERVER['HTTP_X_AUTHORIZATION'])) {
     http_response_code(401);
     echo json_encode(["error" => "Token missing"]);
@@ -15,16 +15,23 @@ if (!isset($_SERVER['HTTP_X_AUTHORIZATION'])) {
 }
 
 $token = $_SERVER['HTTP_X_AUTHORIZATION'];
-$user  = verify_jwt($token);
+$payload = verify_jwt($token);
 
-if (!$user) {
+if (!$payload) {
     http_response_code(401);
     echo json_encode(["error" => "Invalid or expired token"]);
     exit;
 }
 
-// Usuario disponible
+// Validación del payload REAL
+if (!isset($payload['user_id'], $payload['role'])) {
+    http_response_code(401);
+    echo json_encode(["error" => "Invalid token payload"]);
+    exit;
+}
+
+// Usuario normalizado (contrato interno)
 $user = [
-  'id' => $payload['id'],
-  'role' => $payload['role']
+    "id"   => $payload["user_id"],
+    "role" => $payload["role"]
 ];
